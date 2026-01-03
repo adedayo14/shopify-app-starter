@@ -54,35 +54,72 @@ npm install
 3. Choose "Create app manually"
 4. Note down your **API key** and **API secret**
 
-### 3. Set up environment variables
+### 3. Create Neon PostgreSQL Database
+
+1. Go to [Neon](https://neon.tech) and create a free account
+2. Create a new project: **my-shopify-app**
+3. Copy the connection string (starts with `postgresql://`)
+   - Format: `postgresql://user:password@host.neon.tech/dbname?sslmode=require`
+
+### 4. Set up environment variables
+
+Create a `.env` file in the root directory:
 
 ```bash
-# Copy the example file
-cp .env.example .env
+# Shopify App Credentials (from Step 2)
+SHOPIFY_API_KEY="your_client_id_here"
+SHOPIFY_API_SECRET="your_api_secret_here"
 
-# Edit .env and fill in your values
+# Database (from Step 3)
+DATABASE_URL="postgresql://user:password@host.neon.tech/dbname?sslmode=require"
+
+# App URL (for local development, update after deployment)
+SHOPIFY_APP_URL="http://localhost:3000"
+
+# Scopes (adjust based on your app's needs)
+SCOPES="read_products,read_orders"
+
+# Environment
+NODE_ENV="development"
 ```
 
-### 4. Configure your app
+**Important Notes:**
+- Never commit `.env` to git (it's already in `.gitignore`)
+- `SESSION_SECRET` is NOT required (this template uses Prisma session storage)
+- Update `SHOPIFY_APP_URL` to your Vercel URL after deployment
+
+### 5. Configure your app
 
 Update `shopify.app.toml` with:
-- Your `client_id` (from Partners Dashboard)
-- Your app `name`
-- Your app `handle`
-- Required `scopes` (e.g., `read_products,read_orders`)
-- Your deployment URL (or use placeholder for now)
 
-### 5. Set up the database
+```toml
+client_id = "your_client_id_here"  # From Step 2
+name = "My Awesome App"
+application_url = "http://localhost:3000"  # Update after deployment
+embedded = true
+
+[access_scopes]
+scopes = "read_products,read_orders"  # Adjust as needed
+use_legacy_install_flow = false
+```
+
+### 6. Set up the database
 
 ```bash
 # Generate Prisma client
 npx prisma generate
 
-# Push schema to database
+# Push schema to database (run locally, not in Vercel)
 npx prisma db push
 ```
 
-### 6. Start development
+Expected output:
+```
+✔ Your database is now in sync with your Prisma schema
+✔ Generated Prisma Client
+```
+
+### 7. Start development
 
 ```bash
 npm run dev

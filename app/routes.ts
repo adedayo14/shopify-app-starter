@@ -1,11 +1,20 @@
-import { type RouteConfig, index, route } from "@remix-run/route-config";
+import { type RouteConfig, index, route, layout } from "@remix-run/route-config";
 
 export default [
   // Public landing page
   index("routes/_index.tsx"),
 
+  // CRITICAL: Auth routes (required for Shopify OAuth)
+  // Without these routes, you'll get 410 "Gone" and 500 errors on app load
+  route("auth", "routes/auth.tsx"),
+  route("auth/session-token", "routes/auth.session-token.tsx"),
+
   // Main app route (authenticated)
-  route("app", "routes/app._index.tsx"),
+  // Using layout() for app routes ensures proper auth context
+  layout("routes/app.tsx", [
+    route("app", "routes/app._index.tsx"),
+    // Add authenticated app routes here
+  ]),
 
   // GDPR Compliance Webhooks (required)
   route("webhooks/customers/data_request", "routes/webhooks.customers.data_request.tsx"),

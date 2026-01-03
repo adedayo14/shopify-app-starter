@@ -1,6 +1,6 @@
 # Shopify App Starter
 
-A production-ready Shopify embedded admin app template built with modern tools and best practices.
+A production-ready Shopify embedded admin app template with **all critical fixes applied** from real-world debugging. Built with modern tools and battle-tested patterns.
 
 ## 🚀 Tech Stack
 
@@ -14,12 +14,16 @@ A production-ready Shopify embedded admin app template built with modern tools a
 ## ✨ Features
 
 - ✅ Complete OAuth flow & session management
+- ✅ **Auth routes configured** (fixes 410/500 errors)
+- ✅ **All routes properly registered** (fixes 404 errors)
+- ✅ **useFetcher() pattern** for embedded apps (fixes 401 errors)
 - ✅ Embedded app with App Bridge integration
 - ✅ GDPR compliance webhooks (data request, redact)
 - ✅ App lifecycle management (install, uninstall)
-- ✅ Serverless deployment ready
+- ✅ Serverless deployment ready (Vercel optimized)
 - ✅ TypeScript for type safety
 - ✅ Clean, minimal codebase
+- ✅ Battle-tested patterns from production debugging
 
 ## 📋 Prerequisites
 
@@ -173,6 +177,83 @@ hooks: {
   },
 }
 ```
+
+## ⚠️ Critical Patterns (Must Follow!)
+
+This template includes fixes for common issues that cause app failures. **Follow these patterns to avoid debugging:**
+
+### 1. Auth Routes Are Required
+
+The template includes `app/routes/auth.tsx` and `app/routes/auth.session-token.tsx`. **Do NOT delete these!**
+
+Without them, you'll get:
+- 410 "Gone" errors on app load
+- 500 "Unexpected Server Error"
+- OAuth failures
+
+### 2. Route Registration (Remix v3)
+
+All routes MUST be registered in `app/routes.ts`:
+
+```typescript
+// app/routes.ts
+export default [
+  route("auth", "routes/auth.tsx"),  // REQUIRED
+  route("auth/session-token", "routes/auth.session-token.tsx"),  // REQUIRED
+
+  layout("routes/app.tsx", [
+    route("app", "routes/app._index.tsx"),
+    route("app/settings", "routes/app.settings.tsx"),  // Your custom routes
+  ]),
+] satisfies RouteConfig;
+```
+
+**Why:** With `v3_routeConfig: true`, routes aren't auto-discovered. Missing registration = 404 errors.
+
+### 3. Use useFetcher(), NOT useSubmit()
+
+For embedded apps with the new auth strategy, always use `useFetcher()`:
+
+```typescript
+// ✅ CORRECT - Works with embedded apps
+import { useFetcher } from "@remix-run/react";
+
+const fetcher = useFetcher();
+fetcher.submit(data, { method: "post", action: "/app/action" });
+
+// ❌ WRONG - Causes 401 errors
+import { useSubmit } from "@remix-run/react";
+const submit = useSubmit();
+submit(data, { method: "post", action: "/app/action" });  // Don't do this!
+```
+
+**Why:** The new embedded auth strategy (`unstable_newEmbeddedAuthStrategy: true`) requires `useFetcher()` for proper session token handling.
+
+### 4. Scope Changes Require Reinstall
+
+If you change scopes in `shopify.app.toml`:
+
+1. Deploy config: `npm run deploy`
+2. **Uninstall app** from your dev store
+3. **Reinstall** the app
+
+Shopify preserves existing scope grants. Without reinstall, you'll still see old permissions.
+
+### 5. Database Migrations in Serverless
+
+Run `npx prisma db push` **locally** against your database, not in Vercel:
+
+```bash
+# ✅ CORRECT - Run locally
+npx prisma db push
+
+# ❌ WRONG - Fails in Vercel serverless
+# Don't try to run migrations in serverless functions
+```
+
+**Why:** Serverless environments don't allow filesystem writes needed for Prisma's migration process.
+
+---
 
 ## 🚀 Deployment
 
